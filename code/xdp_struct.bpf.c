@@ -1,6 +1,14 @@
 #include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 
+struct
+{
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __type(key, __u16); // IPv4 address
+    __type(value, __u8);
+    __uint(max_entries, 4096);
+} ip_map SEC(".maps");
+
 int my_pow(int num, int power) {
 
 	if (power == 0) {
@@ -148,6 +156,16 @@ int hello(struct xdp_md *ctx) {
 
 	//bpf_printk("length:  %u", my->version & 0b00001111);
 	//bpf_printk("type_of: %u", my->type_of_service);
+	
+	__u16 port = (unsigned short) ((my_tcp2->dst_port & 0x00FF) << 8) + ((my_tcp2->dst_port & 0xFF00) >> 8);
+	__u8 *value = bpf_map_lookup_elem(&ip_map, &port);
+	if (!value) {
+		// no port in map
+		bpf_printk("port no in map");
+	} else {
+		bpf_printk("DROPPED");
+		return XDP_DROP;
+	}
 
 	return XDP_PASS;
 }
