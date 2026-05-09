@@ -1,0 +1,12 @@
+bpftool prog load hello.bpf.o /sys/fs/bpf/hello
+bpftool net attach xdp id 540 dev eth0
+
+sudo tc qdisc add dev enp0s3 clsact
+sudo tc filter add dev enp0s3 ingress bpf direct-action obj ./tc_print.bpf.o sec .text
+sudo tc qdisc del dev enp0s3 clsact
+
+sudo bpftool prog loadall ./sock_alloc_try.bpf.o /sys/fs/bpf/new_try autoattach
+sudo clang -target bpf -g -O2 -c ./fexit_connect.c -o ./fexit_connect.o
+
+
+sudo bpftool prog loadall ./fexit_bind.o /sys/fs/bpf/new_try autoattach
